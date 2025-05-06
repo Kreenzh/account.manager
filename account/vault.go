@@ -3,6 +3,7 @@ package account
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"tasks.go/files"
@@ -48,4 +49,19 @@ func (v *Vault) ToBytes() ([]byte, error) {
 		return nil, fmt.Errorf("failed to convert to json: %w", err)
 	}
 	return file, nil
+}
+func (v *Vault) FindAccByUrl() (Account, error) {
+	var urlToFind string
+	_, err := fmt.Scanln(&urlToFind)
+	if err != nil {
+		return Account{}, fmt.Errorf("failed to scan account url: %w", err)
+	}
+	for _, acc := range v.Accounts {
+		if strings.Contains(acc.Url, urlToFind) {
+			return acc, nil
+		}
+	}
+
+	return Account{}, fmt.Errorf("failed to find account by %s", urlToFind)
+
 }

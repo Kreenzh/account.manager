@@ -47,12 +47,12 @@ func createAccount() error {
 	if err != nil {
 		return fmt.Errorf("failed to create account: %w", err)
 	}
-	vault, err := account.NewVault()
+	Vault, err := account.NewVault()
 	if err != nil {
 		return fmt.Errorf("failed to add account to vault: %w", err)
 	}
 
-	vault.AddAccount(*myAccount)
+	Vault.AddAccount(*myAccount)
 	return nil
 
 }
@@ -62,8 +62,16 @@ func promptData(prompt string) string {
 	fmt.Scanln(&res)
 	return res
 }
-func findAccount() {
+func findAccount() (account.Account, error) {
+	// scan url to find
+	//method to vault to find acc using url(strings.contain)
+	// output acc data (few acc?)
+	acc, err := (*account.Vault).FindAccByUrl()
+	if err != nil {
+		return account.Account{}, fmt.Errorf("failed to find account: %w", err)
+	}
 
+	return acc, nil
 }
 func deleteAccount() {
 
