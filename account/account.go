@@ -19,7 +19,7 @@ type Account struct {
 }
 
 func (acc *Account) Output() {
-	fmt.Printf("%s\n%s\n%s", acc.Login, acc.Password, acc.Url)
+	fmt.Printf("%s\n%s\n%s\n", acc.Login, acc.Password, acc.Url)
 }
 
 func (acc *Account) generatePassword(n int) {

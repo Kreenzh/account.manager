@@ -52,6 +52,7 @@ func (v *Vault) ToBytes() ([]byte, error) {
 }
 func (v *Vault) FindAccByUrl() (Account, error) {
 	var urlToFind string
+	fmt.Println("Input url to find:")
 	_, err := fmt.Scanln(&urlToFind)
 	if err != nil {
 		return Account{}, fmt.Errorf("failed to scan account url: %w", err)

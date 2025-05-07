@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-
 	"tasks.go/account"
+	"tasks.go/files"
 )
 
 func main() {
@@ -11,6 +11,7 @@ func main() {
 	if err != nil {
 		return
 	}
+
 Menu:
 	for {
 		userChoice := mainMenu()
@@ -31,11 +32,18 @@ Menu:
 			acc.Output()
 
 		case userChoice == 3:
-			deleteAccount()
+			s, err := deleteAccount(v)
+			if err != nil {
+				fmt.Print(err.Error())
+				break Menu
+			}
+			fmt.Println(s)
 		case userChoice == 4:
 			break Menu
 
 		}
+		data, _ := v.ToBytes()
+		files.WriteFile(data, "data.json")
 
 	}
 
@@ -92,6 +100,22 @@ func findAccount(v *account.Vault) (account.Account, error) {
 
 	return acc, nil
 }
-func deleteAccount() {
 
+func deleteAccount(v *account.Vault) (string, error) {
+	//	URl
+	//	method to vault to delete
+	//	deleted or not found
+	acc, err := (*account.Vault).FindAccByUrl(v)
+	if err != nil {
+
+		return "not found acc", fmt.Errorf("failed to find account: %w", err)
+	}
+	for index, allAccs := range v.Accounts {
+		if allAccs == acc {
+			v.Accounts = append(v.Accounts[:index], v.Accounts[index+1:]...)
+			fmt.Println("deleted")
+			break
+		}
+	}
+	return "", nil
 }
