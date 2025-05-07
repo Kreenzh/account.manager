@@ -18,8 +18,8 @@ type Account struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func (acc *Account) OutputPassword() {
-	fmt.Println(acc.Login, acc.Password, acc.Url)
+func (acc *Account) Output() {
+	fmt.Printf("%s\n%s\n%s", acc.Login, acc.Password, acc.Url)
 }
 
 func (acc *Account) generatePassword(n int) {

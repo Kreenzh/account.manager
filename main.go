@@ -7,17 +7,29 @@ import (
 )
 
 func main() {
+	v, err := createVault()
+	if err != nil {
+		return
+	}
 Menu:
 	for {
 		userChoice := mainMenu()
 		switch {
 		case userChoice == 1:
-			err := createAccount()
+			err := createAccount(v)
 			if err != nil {
+				fmt.Print(err.Error())
 				break Menu
 			}
+
 		case userChoice == 2:
-			findAccount()
+			acc, err := findAccount(v)
+			if err != nil {
+				fmt.Print(err.Error())
+				break Menu
+			}
+			acc.Output()
+
 		case userChoice == 3:
 			deleteAccount()
 		case userChoice == 4:
@@ -39,7 +51,7 @@ func mainMenu() int {
 	return userChoice
 
 }
-func createAccount() error {
+func createAccount(v *account.Vault) error {
 	login := promptData("Введите логин")
 	password := promptData("Ваш пароль")
 	url := promptData("Введите URL")
@@ -47,14 +59,21 @@ func createAccount() error {
 	if err != nil {
 		return fmt.Errorf("failed to create account: %w", err)
 	}
-	Vault, err := account.NewVault()
+
+	err = v.AddAccount(*myAccount)
 	if err != nil {
-		return fmt.Errorf("failed to add account to vault: %w", err)
+		return fmt.Errorf("failed to add account: %w", err)
 	}
 
-	Vault.AddAccount(*myAccount)
 	return nil
 
+}
+func createVault() (*account.Vault, error) {
+	Vault, err := account.NewVault()
+	if err != nil {
+		return &account.Vault{}, fmt.Errorf("failed to add account to vault: %w", err)
+	}
+	return Vault, nil
 }
 func promptData(prompt string) string {
 	var res string
@@ -62,11 +81,11 @@ func promptData(prompt string) string {
 	fmt.Scanln(&res)
 	return res
 }
-func findAccount() (account.Account, error) {
+func findAccount(v *account.Vault) (account.Account, error) {
 	// scan url to find
 	//method to vault to find acc using url(strings.contain)
 	// output acc data (few acc?)
-	acc, err := (*account.Vault).FindAccByUrl()
+	acc, err := (*account.Vault).FindAccByUrl(v)
 	if err != nil {
 		return account.Account{}, fmt.Errorf("failed to find account: %w", err)
 	}
