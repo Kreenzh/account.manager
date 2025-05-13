@@ -9,34 +9,64 @@ import (
 	"tasks.go/files"
 )
 
+type ByteReader interface {
+	Read() ([]byte, error)
+}
+
+type Writer interface {
+	Write([]byte) error
+}
+type Db interface {
+	ByteReader
+	Writer
+}
+
 type Vault struct {
 	Accounts  []Account `json:"accounts"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+type VaultwithDb struct {
+	Vault
+	db Db
+}
 
-func NewVault() (*Vault, error) {
-	file, err := files.ReadFile("data.json")
+func NewVault(db Db) (*VaultwithDb, error) {
+	file, err := db.Read()
 	if err != nil {
-		return &Vault{
-			Accounts:  make([]Account, 0),
-			UpdatedAt: time.Now(),
-		}, nil
+		return &VaultwithDb{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db: db,
+		}, fmt.Errorf("%w", err)
 	}
 	var vault Vault
 	err = json.Unmarshal(file, &vault)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return &VaultwithDb{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db: db,
+		}, fmt.Errorf("%w", err)
 	}
-	return &vault, nil
+	return &VaultwithDb{
+		Vault: vault,
+		db:    db,
+	}, nil
 }
-func (v *Vault) AddAccount(acc Account) error {
+
+func (v *VaultwithDb) AddAccount(acc Account) error {
+	db := files.NewJsonDb("data.json")
 	v.Accounts = append(v.Accounts, acc)
 	v.UpdatedAt = time.Now()
 	data, err := v.ToBytes()
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = files.WriteFile(data, "data.json")
+	err = db.Write(data)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -50,7 +80,7 @@ func (v *Vault) ToBytes() ([]byte, error) {
 	}
 	return file, nil
 }
-func (v *Vault) FindAccByUrl() (Account, error) {
+func (v *VaultwithDb) FindAccByUrl() (Account, error) {
 	var urlToFind string
 	fmt.Println("Input url to find:")
 	_, err := fmt.Scanln(&urlToFind)

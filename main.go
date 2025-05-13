@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+
 	"tasks.go/account"
 	"tasks.go/files"
 )
 
 func main() {
+	db := files.NewJsonDb("data.json")
 	v, err := createVault()
 	if err != nil {
 		return
@@ -14,16 +16,22 @@ func main() {
 
 Menu:
 	for {
-		userChoice := mainMenu()
+		userChoice := promptData([]string{
+			"1. Create new acc",
+			"2. Find acc",
+			"3. Delete acc",
+			"4. Exit",
+			"Choose variant",
+		})
 		switch {
-		case userChoice == 1:
+		case userChoice == "1":
 			err := createAccount(v)
 			if err != nil {
 				fmt.Print(err.Error())
 				break Menu
 			}
 
-		case userChoice == 2:
+		case userChoice == "2":
 			acc, err := findAccount(v)
 			if err != nil {
 				fmt.Print(err.Error())
@@ -31,38 +39,28 @@ Menu:
 			}
 			acc.Output()
 
-		case userChoice == 3:
+		case userChoice == "3":
 			s, err := deleteAccount(v)
 			if err != nil {
 				fmt.Print(err.Error())
 				break Menu
 			}
 			fmt.Println(s)
-		case userChoice == 4:
+		case userChoice == "4":
 			break Menu
 
 		}
 		data, _ := v.ToBytes()
-		files.WriteFile(data, "data.json")
+		db.Write(data)
 
 	}
 
 }
-func mainMenu() int {
-	var userChoice int
-	fmt.Println("___MENU___")
-	fmt.Println("1. Create new acc")
-	fmt.Println("2. Find acc")
-	fmt.Println("3. Delete acc")
-	fmt.Println("4. Exit")
-	fmt.Scanln(&userChoice)
-	return userChoice
 
-}
-func createAccount(v *account.Vault) error {
-	login := promptData("Введите логин")
-	password := promptData("Ваш пароль")
-	url := promptData("Введите URL")
+func createAccount(v *account.VaultwithDb) error {
+	login := promptData([]string{"Введите логин"})
+	password := promptData([]string{"Ваш пароль"})
+	url := promptData([]string{"Введите URL"})
 	myAccount, err := account.NewAccount(login, password, url)
 	if err != nil {
 		return fmt.Errorf("failed to create account: %w", err)
@@ -76,24 +74,35 @@ func createAccount(v *account.Vault) error {
 	return nil
 
 }
-func createVault() (*account.Vault, error) {
-	Vault, err := account.NewVault()
+func createVault() (*account.VaultwithDb, error) {
+	Vault, err := account.NewVault(files.NewJsonDb("data.json"))
 	if err != nil {
-		return &account.Vault{}, fmt.Errorf("failed to add account to vault: %w", err)
+		return &account.VaultwithDb{}, fmt.Errorf("failed to add account to vault: %w", err)
 	}
 	return Vault, nil
 }
-func promptData(prompt string) string {
+
+// get slice any type
+// output elems by string
+// last elem - printf
+// append : to last elem
+func promptData[T any](prompt []T) string {
+	for index, value := range prompt {
+		if index == len(prompt)-1 {
+			fmt.Printf("%v: ", value)
+		} else {
+			fmt.Println(value)
+		}
+	}
 	var res string
-	fmt.Println(prompt + ": ")
 	fmt.Scanln(&res)
 	return res
 }
-func findAccount(v *account.Vault) (account.Account, error) {
+func findAccount(v *account.VaultwithDb) (account.Account, error) {
 	// scan url to find
 	//method to vault to find acc using url(strings.contain)
 	// output acc data (few acc?)
-	acc, err := (*account.Vault).FindAccByUrl(v)
+	acc, err := (*account.VaultwithDb).FindAccByUrl(v)
 	if err != nil {
 		return account.Account{}, fmt.Errorf("failed to find account: %w", err)
 	}
@@ -101,11 +110,11 @@ func findAccount(v *account.Vault) (account.Account, error) {
 	return acc, nil
 }
 
-func deleteAccount(v *account.Vault) (string, error) {
+func deleteAccount(v *account.VaultwithDb) (string, error) {
 	//	URl
 	//	method to vault to delete
 	//	deleted or not found
-	acc, err := (*account.Vault).FindAccByUrl(v)
+	acc, err := (*account.VaultwithDb).FindAccByUrl(v)
 	if err != nil {
 
 		return "not found acc", fmt.Errorf("failed to find account: %w", err)
