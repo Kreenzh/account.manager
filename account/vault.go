@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"tasks.go/encrypter"
 	"tasks.go/files"
+	"tasks.go/output"
 )
 
 type ByteReader interface {
@@ -27,10 +29,11 @@ type Vault struct {
 }
 type VaultwithDb struct {
 	Vault
-	db Db
+	db  Db
+	enc encrypter.Encrypter
 }
 
-func NewVault(db Db) (*VaultwithDb, error) {
+func NewVault(db Db, enc encrypter.Encrypter) (*VaultwithDb, error) {
 	file, err := db.Read()
 	if err != nil {
 		return &VaultwithDb{
@@ -38,7 +41,8 @@ func NewVault(db Db) (*VaultwithDb, error) {
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}, fmt.Errorf("%w", err)
 	}
 	var vault Vault
@@ -49,17 +53,19 @@ func NewVault(db Db) (*VaultwithDb, error) {
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}, fmt.Errorf("%w", err)
 	}
 	return &VaultwithDb{
 		Vault: vault,
 		db:    db,
+		enc:   enc,
 	}, nil
 }
 
 func (v *VaultwithDb) AddAccount(acc Account) error {
-	db := files.NewJsonDb("data.json")
+	db := files.NewJsonDb("data.vault")
 	v.Accounts = append(v.Accounts, acc)
 	v.UpdatedAt = time.Now()
 	data, err := v.ToBytes()
@@ -80,19 +86,29 @@ func (v *Vault) ToBytes() ([]byte, error) {
 	}
 	return file, nil
 }
-func (v *VaultwithDb) FindAccByUrl() (Account, error) {
-	var urlToFind string
-	fmt.Println("Input url to find:")
-	_, err := fmt.Scanln(&urlToFind)
+func (v *VaultwithDb) FindAcc() (Account, error) {
+	var smthToFind string
+	fmt.Println("Input login or url to find:")
+	_, err := fmt.Scanln(&smthToFind)
 	if err != nil {
 		return Account{}, fmt.Errorf("failed to scan account url: %w", err)
 	}
 	for _, acc := range v.Accounts {
-		if strings.Contains(acc.Url, urlToFind) {
+		if strings.Contains(acc.Url, smthToFind) {
 			return acc, nil
 		}
 	}
 
-	return Account{}, fmt.Errorf("failed to find account by %s", urlToFind)
+	return Account{}, fmt.Errorf("failed to find account by %s", smthToFind)
 
+}
+func (v *VaultwithDb) save() {
+	v.UpdatedAt = time.Now()
+	data, err := v.Vault.ToBytes()
+	encData := v.enc.Encrypt(data)
+	if err != nil {
+		output.PrintErr(err)
+	}
+
+	v.db.Write(encData)
 }

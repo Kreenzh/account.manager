@@ -3,12 +3,26 @@ package main
 import (
 	"fmt"
 
+	"github.com/lpernett/godotenv"
 	"tasks.go/account"
+	"tasks.go/encrypter"
 	"tasks.go/files"
+	"tasks.go/output"
 )
 
+// var menu = map[string]func(*account.VaultwithDb){
+// 	"1": createAccount,
+// 	"2": findAccount,
+// 	"3": deleteAccount,
+// }
+
 func main() {
-	db := files.NewJsonDb("data.json")
+
+	err := godotenv.Load("env.env")
+	if err != nil {
+		output.PrintErr("failed to read .env file")
+	}
+	db := files.NewJsonDb("data.vault")
 	v, err := createVault()
 	if err != nil {
 		return
@@ -75,7 +89,7 @@ func createAccount(v *account.VaultwithDb) error {
 
 }
 func createVault() (*account.VaultwithDb, error) {
-	Vault, err := account.NewVault(files.NewJsonDb("data.json"))
+	Vault, err := account.NewVault(files.NewJsonDb("data.json"), *encrypter.NewEncrypter())
 	if err != nil {
 		return &account.VaultwithDb{}, fmt.Errorf("failed to add account to vault: %w", err)
 	}
@@ -102,7 +116,7 @@ func findAccount(v *account.VaultwithDb) (account.Account, error) {
 	// scan url to find
 	//method to vault to find acc using url(strings.contain)
 	// output acc data (few acc?)
-	acc, err := (*account.VaultwithDb).FindAccByUrl(v)
+	acc, err := (*account.VaultwithDb).FindAcc(v)
 	if err != nil {
 		return account.Account{}, fmt.Errorf("failed to find account: %w", err)
 	}
@@ -114,7 +128,7 @@ func deleteAccount(v *account.VaultwithDb) (string, error) {
 	//	URl
 	//	method to vault to delete
 	//	deleted or not found
-	acc, err := (*account.VaultwithDb).FindAccByUrl(v)
+	acc, err := (*account.VaultwithDb).FindAcc(v)
 	if err != nil {
 
 		return "not found acc", fmt.Errorf("failed to find account: %w", err)
